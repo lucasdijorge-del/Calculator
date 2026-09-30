@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TaskFlow - Gerenciador de tarefas desenvolvido por Lucas Di Jorge Gonçalves de Freitas.">
+    <meta name="theme-color" content="#f5f7f2">
+    <title>TaskFlow | Gerenciador de Tarefas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container navbar">
+            <a href="#inicio" class="logo" aria-label="TaskFlow, início">Task<span>Flow</span><span class="logo-mark" aria-hidden="true">.</span></a>
+            <p class="header-text"><span class="status-dot" aria-hidden="true"></span> Seu espaço de foco</p>
+        </div>
+    </header>
+
+    <main class="container main" id="inicio">
+        <section class="intro" aria-labelledby="page-title">
+            <div>
+                <p class="eyebrow">SEU DIA, COM MAIS INTENÇÃO</p>
+                <h1 id="page-title">Organize suas tarefas<span>.</span></h1>
+                <p class="intro-description">Um passo de cada vez. Acompanhe seu progresso e mantenha o foco no que importa.</p>
+            </div>
+            <div class="today-date" aria-label="Data de hoje">
+                <span class="date-label">HOJE</span>
+                <time id="today-date"></time>
+            </div>
+        </section>
+
+        <section class="stats" aria-label="Resumo das tarefas">
+            <div class="stat-card stat-total">
+                <span class="stat-icon" aria-hidden="true">▤</span>
+                <div><p>Total</p><strong id="total-tasks">0</strong></div>
+            </div>
+            <div class="stat-card stat-pending">
+                <span class="stat-icon" aria-hidden="true">◷</span>
+                <div><p>Pendentes</p><strong id="pending-tasks">0</strong></div>
+            </div>
+            <div class="stat-card stat-completed">
+                <span class="stat-icon" aria-hidden="true">✓</span>
+                <div><p>Concluídas</p><strong id="completed-tasks">0</strong></div>
+            </div>
+        </section>
+
+        <section class="task-panel" aria-label="Gerenciador de tarefas">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">LISTA DE HOJE</p>
+                    <h2>O que vamos fazer?</h2>
+                </div>
+                <span class="task-count" id="task-count-label">0 tarefas</span>
+            </div>
+
+            <form id="task-form" novalidate>
+                <label class="visually-hidden" for="task-input">Nova tarefa</label>
+                <div class="input-wrapper">
+                    <span class="input-plus" aria-hidden="true">+</span>
+                    <input type="text" id="task-input" placeholder="Escreva uma tarefa..." autocomplete="off" maxlength="100" aria-describedby="character-count error-message">
+                    <span id="character-count" aria-live="polite">0/100</span>
+                </div>
+                <button type="submit" class="add-button"><span aria-hidden="true">+</span> Adicionar tarefa</button>
+            </form>
+            <p class="error-message" id="error-message" role="alert"></p>
+
+            <div class="task-controls">
+                <div class="filters" role="group" aria-label="Filtrar tarefas">
+                    <button type="button" class="filter-button active" data-filter="all" aria-pressed="true">Todas</button>
+                    <button type="button" class="filter-button" data-filter="pending" aria-pressed="false">Pendentes</button>
+                    <button type="button" class="filter-button" data-filter="completed" aria-pressed="false">Concluídas</button>
+                </div>
+                <button type="button" id="clear-completed" class="clear-button" disabled>Limpar concluídas</button>
+            </div>
+
+            <div id="task-list" class="task-list" aria-live="polite"></div>
+            <div id="empty-state" class="empty-state">
+                <div class="empty-icon" aria-hidden="true">✳</div>
+                <h3 id="empty-title">Sua lista começa aqui</h3>
+                <p id="empty-description">Adicione uma tarefa e dê o primeiro passo.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Feito com cuidado por <strong>Lucas Di Jorge Gonçalves de Freitas</strong></p>
+        <p class="footer-tech">HTML <span>·</span> CSS <span>·</span> JavaScript</p>
+    </footer>
+</body>
+</html>

@@ -1,14 +1,11 @@
-# TaskFlow
+# Calculator
 
-TaskFlow é um gerenciador de tarefas simples, leve e rápido, desenvolvido em HTML, CSS e JavaScript.
+Calculadora simples desenvolvida com HTML, CSS e JavaScript.
 
 ## Funcionalidades
-- Adicionar tarefas
-- Marcar como concluída
-- Filtrar por todas, pendentes e concluídas
-- Remover tarefas
-- Limpar tarefas concluídas
-- Persistência local com LocalStorage
+- Operações aritméticas e porcentagem
+- Entrada por teclado
+- Edição e limpeza da expressão
 
 ## Como executar
-Abra o arquivo index.html em um navegador, ou utilize um servidor local simples.
+Abra `index.html` em um navegador.

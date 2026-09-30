@@ -1,158 +1,400 @@
-const STORAGE_KEY = "taskflow.tasks.v1";
-const form = document.querySelector("#task-form");
-const input = document.querySelector("#task-input");
-const list = document.querySelector("#task-list");
-const emptyState = document.querySelector("#empty-state");
-const emptyTitle = document.querySelector("#empty-title");
-const emptyDescription = document.querySelector("#empty-description");
-const errorMessage = document.querySelector("#error-message");
-const characterCount = document.querySelector("#character-count");
-const clearCompletedButton = document.querySelector("#clear-completed");
-const filterButtons = [...document.querySelectorAll(".filter-button")];
+const display = document.getElementById("display");
+const expressionDisplay = document.getElementById("expression");
+const buttons = document.querySelectorAll(".key");
 
-let tasks = loadTasks();
-let currentFilter = "all";
+let expression = "";
+let justCalculated = false;
 
-document.querySelector("#today-date").textContent = new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short"
-}).format(new Date()).replaceAll(".", "");
+const operators = ["+", "-", "*", "/"];
 
-form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const title = input.value.trim();
+buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const value = button.dataset.value;
+        const action = button.dataset.action;
 
-    if (!title) {
-        errorMessage.textContent = "Escreva uma tarefa antes de adicionar.";
-        input.focus();
+        if (action) {
+            handleAction(action);
+            return;
+        }
+
+        if (value !== undefined) {
+            handleInput(value);
+        }
+    });
+});
+
+function handleAction(action) {
+    switch (action) {
+        case "clear":
+            clearCalculator();
+            break;
+
+        case "delete":
+            deleteLast();
+            break;
+
+        case "percentage":
+            percentage();
+            break;
+
+        case "calculate":
+            calculate();
+            break;
+    }
+}
+
+function handleInput(value) {
+    if (justCalculated && !operators.includes(value)) {
+        expression = "";
+        expressionDisplay.textContent = "";
+        justCalculated = false;
+    }
+
+    if (justCalculated && operators.includes(value)) {
+        justCalculated = false;
+    }
+
+    if (isNumber(value)) {
+        addNumber(value);
         return;
     }
 
-    tasks.unshift({
-        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-        title,
-        completed: false,
-        createdAt: Date.now()
-    });
-    input.value = "";
-    characterCount.textContent = "0/100";
-    errorMessage.textContent = "";
-    saveAndRender();
-    input.focus();
-});
+    if (value === ".") {
+        addDecimal();
+        return;
+    }
 
-input.addEventListener("input", () => {
-    characterCount.textContent = `${input.value.length}/100`;
-    if (input.value.trim()) errorMessage.textContent = "";
-});
+    if (operators.includes(value)) {
+        addOperator(value);
+    }
+}
 
-filterButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        currentFilter = button.dataset.filter;
-        filterButtons.forEach((filterButton) => {
-            const isActive = filterButton === button;
-            filterButton.classList.toggle("active", isActive);
-            filterButton.setAttribute("aria-pressed", String(isActive));
-        });
-        render();
-    });
-});
+function addNumber(number) {
+    const currentNumber = getCurrentNumber();
 
-list.addEventListener("change", (event) => {
-    if (!event.target.matches(".task-checkbox")) return;
-    const task = tasks.find((item) => item.id === event.target.dataset.id);
-    if (!task) return;
-    task.completed = event.target.checked;
-    saveAndRender();
-});
+    if (currentNumber === "0" && number === "0") {
+        return;
+    }
 
-list.addEventListener("click", (event) => {
-    const button = event.target.closest(".task-action");
-    if (!button) return;
-    tasks = tasks.filter((task) => task.id !== button.dataset.id);
-    saveAndRender();
-});
+    expression += number;
+    updateDisplay();
+}
 
-clearCompletedButton.addEventListener("click", () => {
-    tasks = tasks.filter((task) => !task.completed);
-    saveAndRender();
-});
+function addDecimal() {
+    const currentNumber = getCurrentNumber();
 
-function loadTasks() {
+    if (currentNumber.includes(".")) {
+        return;
+    }
+
+    if (currentNumber === "" || currentNumber === "0" && expression === "") {
+        expression += "0.";
+    } else {
+        expression += ".";
+    }
+
+    updateDisplay();
+}
+
+function addOperator(operator) {
+    if (expression === "") {
+        if (operator === "-") {
+            expression = "-";
+            updateDisplay();
+        }
+        return;
+    }
+
+    const lastCharacter = expression[expression.length - 1];
+
+    if (operators.includes(lastCharacter)) {
+        expression = expression.slice(0, -1) + operator;
+        updateDisplay();
+        return;
+    }
+
+    expression += operator;
+    updateDisplay();
+}
+
+function clearCalculator() {
+    expression = "";
+    justCalculated = false;
+    expressionDisplay.textContent = "";
+    display.textContent = "0";
+}
+
+function deleteLast() {
+    if (justCalculated) {
+        clearCalculator();
+        return;
+    }
+
+    expression = expression.slice(0, -1);
+    updateDisplay();
+
+    if (expression === "") {
+        display.textContent = "0";
+    }
+}
+
+function percentage() {
+    if (expression === "") {
+        return;
+    }
+
+    const currentNumber = getCurrentNumber();
+
+    if (currentNumber === "" || currentNumber === "-") {
+        return;
+    }
+
+    const startIndex = expression.length - currentNumber.length;
+    const number = parseFloat(currentNumber);
+
+    if (Number.isNaN(number)) {
+        return;
+    }
+
+    const percentageValue = number / 100;
+
+    expression = expression.substring(0, startIndex) + percentageValue;
+    updateDisplay();
+}
+
+function calculate() {
+    if (expression === "") {
+        return;
+    }
+
+    const lastCharacter = expression[expression.length - 1];
+
+    if (operators.includes(lastCharacter)) {
+        return;
+    }
+
     try {
-        const savedTasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        return Array.isArray(savedTasks)
-            ? savedTasks.filter((task) => task && typeof task.id === "string" && typeof task.title === "string")
-            : [];
-    } catch {
-        return [];
+        const result = evaluateExpression(expression);
+
+        if (!Number.isFinite(result)) {
+            throw new Error("Resultado inválido");
+        }
+
+        expressionDisplay.textContent = formatExpression(expression) + " =";
+        display.textContent = formatNumber(result);
+        expression = String(result);
+        justCalculated = true;
+    } catch (error) {
+        display.textContent = "Erro";
+        expressionDisplay.textContent = "Expressão inválida";
+        expression = "";
+        justCalculated = false;
     }
 }
 
-function saveAndRender() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    render();
+function evaluateExpression(input) {
+    const tokens = tokenize(input);
+    const postfix = convertToPostfix(tokens);
+    return evaluatePostfix(postfix);
 }
 
-function render() {
-    const completedCount = tasks.filter((task) => task.completed).length;
-    const pendingCount = tasks.length - completedCount;
-    const visibleTasks = tasks.filter((task) => {
-        if (currentFilter === "pending") return !task.completed;
-        if (currentFilter === "completed") return task.completed;
-        return true;
+function tokenize(input) {
+    const tokens = [];
+    let number = "";
+
+    for (let index = 0; index < input.length; index++) {
+        const character = input[index];
+
+        if (isNumber(character) || character === ".") {
+            number += character;
+            continue;
+        }
+
+        if (operators.includes(character)) {
+            if (character === "-" && number === "" && tokens.length === 0) {
+                number = "-";
+                continue;
+            }
+
+            if (number !== "") {
+                tokens.push(parseFloat(number));
+                number = "";
+            }
+
+            tokens.push(character);
+        }
+    }
+
+    if (number !== "") {
+        tokens.push(parseFloat(number));
+    }
+
+    return tokens;
+}
+
+function convertToPostfix(tokens) {
+    const output = [];
+    const operatorStack = [];
+
+    const precedence = {
+        "+": 1,
+        "-": 1,
+        "*": 2,
+        "/": 2
+    };
+
+    tokens.forEach((token) => {
+        if (typeof token === "number") {
+            output.push(token);
+            return;
+        }
+
+        while (
+            operatorStack.length > 0 &&
+            precedence[operatorStack[operatorStack.length - 1]] >= precedence[token]
+        ) {
+            output.push(operatorStack.pop());
+        }
+
+        operatorStack.push(token);
     });
 
-    document.querySelector("#total-tasks").textContent = tasks.length;
-    document.querySelector("#pending-tasks").textContent = pendingCount;
-    document.querySelector("#completed-tasks").textContent = completedCount;
-    document.querySelector("#task-count-label").textContent = `${tasks.length} ${tasks.length === 1 ? "tarefa" : "tarefas"}`;
-    clearCompletedButton.disabled = completedCount === 0;
-
-    list.replaceChildren(...visibleTasks.map(createTaskElement));
-    emptyState.hidden = visibleTasks.length > 0;
-
-    if (tasks.length === 0) {
-        emptyTitle.textContent = "Sua lista começa aqui";
-        emptyDescription.textContent = "Adicione uma tarefa e dê o primeiro passo.";
-    } else if (visibleTasks.length === 0) {
-        emptyTitle.textContent = "Nenhuma tarefa por aqui";
-        emptyDescription.textContent = currentFilter === "completed"
-            ? "As tarefas concluídas aparecerão aqui."
-            : "Você não tem tarefas pendentes. Bom trabalho!";
+    while (operatorStack.length > 0) {
+        output.push(operatorStack.pop());
     }
+
+    return output;
 }
 
-function createTaskElement(task) {
-    const item = document.createElement("article");
-    item.className = `task-item${task.completed ? " is-completed" : ""}`;
+function evaluatePostfix(tokens) {
+    const stack = [];
 
-    const checkbox = document.createElement("input");
-    checkbox.className = "task-checkbox";
-    checkbox.type = "checkbox";
-    checkbox.checked = task.completed;
-    checkbox.dataset.id = task.id;
-    checkbox.setAttribute("aria-label", `Marcar como ${task.completed ? "pendente" : "concluída"}: ${task.title}`);
+    tokens.forEach((token) => {
+        if (typeof token === "number") {
+            stack.push(token);
+            return;
+        }
 
-    const title = document.createElement("span");
-    title.className = "task-title";
-    title.textContent = task.title;
+        const second = stack.pop();
+        const first = stack.pop();
 
-    const createdAt = document.createElement("time");
-    createdAt.className = "task-created";
-    createdAt.dateTime = new Date(task.createdAt).toISOString();
-    createdAt.textContent = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(task.createdAt);
+        if (first === undefined || second === undefined) {
+            throw new Error("Expressão inválida");
+        }
 
-    const removeButton = document.createElement("button");
-    removeButton.className = "task-action";
-    removeButton.type = "button";
-    removeButton.dataset.id = task.id;
-    removeButton.setAttribute("aria-label", `Remover tarefa: ${task.title}`);
-    removeButton.textContent = "×";
+        let result;
 
-    item.append(checkbox, title, createdAt, removeButton);
-    return item;
+        switch (token) {
+            case "+":
+                result = first + second;
+                break;
+
+            case "-":
+                result = first - second;
+                break;
+
+            case "*":
+                result = first * second;
+                break;
+
+            case "/":
+                if (second === 0) {
+                    throw new Error("Divisão por zero");
+                }
+                result = first / second;
+                break;
+
+            default:
+                throw new Error("Operador inválido");
+        }
+
+        stack.push(result);
+    });
+
+    if (stack.length !== 1) {
+        throw new Error("Expressão inválida");
+    }
+
+    return stack[0];
 }
 
-render();
+function getCurrentNumber() {
+    let index = expression.length - 1;
+
+    while (index >= 0 && !operators.includes(expression[index])) {
+        index--;
+    }
+
+    return expression.substring(index + 1);
+}
+
+function isNumber(value) {
+    return /^\d$/.test(value);
+}
+
+function updateDisplay() {
+    if (expression === "") {
+        display.textContent = "0";
+        return;
+    }
+
+    display.textContent = formatExpression(expression);
+}
+
+function formatExpression(value) {
+    return value
+        .replaceAll("*", " × ")
+        .replaceAll("/", " ÷ ")
+        .replaceAll("+", " + ")
+        .replaceAll("-", " − ");
+}
+
+function formatNumber(number) {
+    if (Math.abs(number) >= 1e12 || (Math.abs(number) > 0 && Math.abs(number) < 1e-9)) {
+        return number.toExponential(6);
+    }
+
+    const rounded = Number(number.toFixed(10));
+    return String(rounded);
+}
+
+document.addEventListener("keydown", (event) => {
+    const key = event.key;
+
+    if (/^\d$/.test(key)) {
+        handleInput(key);
+        return;
+    }
+
+    if (key === "+" || key === "-" || key === "*" || key === "/") {
+        handleInput(key);
+        return;
+    }
+
+    if (key === ".") {
+        handleInput(".");
+        return;
+    }
+
+    if (key === "Enter" || key === "=") {
+        event.preventDefault();
+        calculate();
+        return;
+    }
+
+    if (key === "Backspace") {
+        deleteLast();
+        return;
+    }
+
+    if (key === "Escape") {
+        clearCalculator();
+        return;
+    }
+
+    if (key === "%") {
+        percentage();
+    }
+});
+
+clearCalculator();
